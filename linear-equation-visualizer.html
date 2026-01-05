@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线性方程组解的结构可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        
+        /* 输入区域 */
+        .input-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .equation-type {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .equation-type label {
+            margin: 0 15px;
+            font-weight: bold;
+        }
+        
+        .equation-form {
+            margin-bottom: 20px;
+        }
+        
+        .equation-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .equation-term {
+            display: flex;
+            align-items: center;
+            margin: 0 5px;
+        }
+        
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+        
+        .variable {
+            margin: 0 5px;
+            font-weight: bold;
+        }
+        
+        .equals {
+            margin: 0 10px;
+            font-weight: bold;
+        }
+        
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        /* 可视化区域 */
+        .visualization-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #visualization {
+            width: 100%;
+            min-width: 600px;
+            height: 400px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin: 0 auto;
+        }
+        
+        #visualization.three-d {
+            height: 500px;
+        }
+        
+        /* 结果解释区域 */
+        .result-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-item {
+            margin: 15px 0;
+        }
+        
+        .result-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .result-value {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        
+        .tooltip {
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dashed #007bff;
+        }
+        
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            #visualization {
+                min-width: 100%;
+                height: 300px;
+            }
+            
+            #visualization.three-d {
+                height: 400px;
+            }
+            
+            .equation-row {
+                flex-wrap: wrap;
+            }
+            
+            .equation-term {
+                margin: 5px;
+            }
+            
+            input[type="number"] {
+                width: 50px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>线性方程组解的结构可视化</h1>
+        
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <div class="equation-type">
+                <label><input type="radio" name="equationType" value="2" checked> 二元一次方程组</label>
+                <label><input type="radio" name="equationType" value="3"> 三元一次方程组</label>
+            </div>
+            
+            <!-- 二元方程组表单 -->
+            <div id="two-variable" class="equation-form">
+                <div class="equation-row">
+                    <div class="equation-term"><input type="number" id="a1" value="1">x + <input type="number" id="b1" value="2">y = <input type="number" id="c1" value="3"></div>
+                </div>
+                <div class="equation-row">
+                    <div class="equation-term"><input type="number" id="a2" value="3">x + <input type="number" id="b2" value="-1">y = <input type="number" id="c2" value="1"></div>
+                </div>
+            </div>
+            
+            <!-- 三元方程组表单 -->
+            <div id="three-variable" class="equation-form" style="display: none;">
+                <div class="equation-row">
+                    <div class="equation-term"><input type="number" id="a1_3" value="1">x + <input type="number" id="b1_3" value="1">y + <input type="number" id="c1_3" value="1">z = <input type="number" id="d1_3" value="6"></div>
+                </div>
+                <div class="equation-row">
+                    <div class="equation-term"><input type="number" id="a2_3" value="2">x + <input type="number" id="b2_3" value="-1">y + <input type="number" id="c2_3" value="1">z = <input type="number" id="d2_3" value="3"></div>
+                </div>
+                <div class="equation-row">
+                    <div class="equation-term"><input type="number" id="a3_3" value="1">x + <input type="number" id="b3_3" value="2">y + <input type="number" id="c3_3" value="-1">z = <input type="number" id="d3_3" value="2"></div>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button id="randomBtn">随机生成示例</button>
+                <button id="resetBtn">重置输入</button>
+            </div>
+        </div>
+        
+        <!-- 可视化区域 -->
+        <div class="visualization-section">
+            <div id="visualization"></div>
+        </div>
+        
+        <!-- 结果解释区域 -->
+        <div class="result-section">
+            <h3>计算结果与解释</h3>
+            <div class="result-item">
+                <span class="result-label">系数矩阵 <span class="tooltip" data-tooltip="由方程组系数组成的矩阵">A</span> 的秩 r(A)：</span>
+                <span class="result-value" id="rankA">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">增广矩阵 <span class="tooltip" data-tooltip="系数矩阵加上常数项组成的矩阵">Ā</span> 的秩 r(Ā)：</span>
+                <span class="result-value" id="rankAugA">0</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">解的类型：</span>
+                <span class="result-value" id="solutionType">-</span>
+            </div>
+            <div class="result-item" id="solutionCoords" style="display: none;">
+                <span class="result-label">解的坐标：</span>
+                <span class="result-value" id="solution">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">代数依据：</span>
+                <span id="algebraicReason">-</span>
+            </div>
+            <div class="result-item">
+                <span class="result-label">几何意义：</span>
+                <span id="geometricMeaning">-</span>
+            </div>
+        </div>
+    </div>
+    
+
+    
+    
+    
+    
+    
+    
+    <script>
+        // 全局变量
+        let equationType = 2; // 默认二元方程组
+        let canvas, ctx; // 2D Canvas
+        let solution = null;
+        let solutionType = "";
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+            init2DCanvas();
+            calculateAndVisualize();
+        });
+        
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 方程组类型切换
+            document.querySelectorAll('input[name="equationType"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    equationType = parseInt(this.value);
+                    switchEquationType();
+                    calculateAndVisualize();
+                });
+            });
+            
+            // 随机生成示例
+            document.getElementById('randomBtn').addEventListener('click', function() {
+                generateRandomEquation();
+                calculateAndVisualize();
+            });
+            
+            // 重置输入
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                resetInput();
+                calculateAndVisualize();
+            });
+            
+            // 输入框变化事件
+            document.querySelectorAll('input[type="number"]').forEach(input => {
+                input.addEventListener('input', calculateAndVisualize);
+            });
+        }
+        
+        // 切换方程组类型
+        function switchEquationType() {
+            const twoVar = document.getElementById('two-variable');
+            const threeVar = document.getElementById('three-variable');
+            const visualization = document.getElementById('visualization');
+            
+            if (equationType === 2) {
+                twoVar.style.display = 'block';
+                threeVar.style.display = 'none';
+                visualization.className = '';
+                visualization.innerHTML = '';
+                init2DCanvas();
+            } else {
+                twoVar.style.display = 'none';
+                threeVar.style.display = 'block';
+                visualization.className = 'three-d';
+                visualization.innerHTML = '';
+                
+                // 初始化三元方程组参数
+                window.equation3D = {
+                    a1: parseFloat(document.getElementById('a1_3').value) || 0,
+                    b1: parseFloat(document.getElementById('b1_3').value) || 0,
+                    c1: parseFloat(document.getElementById('c1_3').value) || 0,
+                    d1: parseFloat(document.getElementById('d1_3').value) || 0,
+                    a2: parseFloat(document.getElementById('a2_3').value) || 0,
+                    b2: parseFloat(document.getElementById('b2_3').value) || 0,
+                    c2: parseFloat(document.getElementById('c2_3').value) || 0,
+                    d2: parseFloat(document.getElementById('d2_3').value) || 0,
+                    a3: parseFloat(document.getElementById('a3_3').value) || 0,
+                    b3: parseFloat(document.getElementById('b3_3').value) || 0,
+                    c3: parseFloat(document.getElementById('c3_3').value) || 0,
+                    d3: parseFloat(document.getElementById('d3_3').value) || 0
+                };
+                
+                init3DScene();
+            }
+        }
+        
+        // 初始化2D Canvas
+        function init2DCanvas() {
+            const visualization = document.getElementById('visualization');
+            canvas = document.createElement('canvas');
+            canvas.width = visualization.clientWidth;
+            canvas.height = visualization.clientHeight;
+            visualization.appendChild(canvas);
+            ctx = canvas.getContext('2d');
+            
+            // 添加交互事件
+            let isDragging = false;
+            let lastMousePos = { x: 0, y: 0 };
+            let offset = { x: canvas.width / 2, y: canvas.height / 2 };
+            let scale = 20;
+            
+            canvas.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                lastMousePos = { x: e.offsetX, y: e.offsetY };
+            });
+            
+            canvas.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    const dx = e.offsetX - lastMousePos.x;
+                    const dy = e.offsetY - lastMousePos.y;
+                    offset.x += dx;
+                    offset.y += dy;
+                    lastMousePos = { x: e.offsetX, y: e.offsetY };
+                    draw2D();
+                }
+            });
+            
+            canvas.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+            
+            canvas.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                scale += e.deltaY * -0.1;
+                scale = Math.max(5, Math.min(100, scale));
+                draw2D();
+            });
+            
+            // 重置视图按钮
+            const resetViewBtn = document.createElement('button');
+            resetViewBtn.textContent = '重置视图';
+            resetViewBtn.style.position = 'absolute';
+            resetViewBtn.style.top = '10px';
+            resetViewBtn.style.left = '10px';
+            visualization.style.position = 'relative';
+            visualization.appendChild(resetViewBtn);
+            
+            resetViewBtn.addEventListener('click', function() {
+                offset = { x: canvas.width / 2, y: canvas.height / 2 };
+                scale = 20;
+                draw2D();
+            });
+            
+            // 保存状态到闭包
+            canvas.offset = offset;
+            canvas.scale = scale;
+        }
+        
+        // 初始化3D场景（使用CSS 3D变换实现）
+        function init3DScene() {
+            const visualization = document.getElementById('visualization');
+            
+            // 创建3D容器
+            const container = document.createElement('div');
+            container.style.width = '100%';
+            container.style.height = '100%';
+            container.style.position = 'relative';
+            container.style.perspective = '1000px';
+            visualization.appendChild(container);
+            
+            // 创建3D舞台
+            const stage = document.createElement('div');
+            stage.style.width = '300px';
+            stage.style.height = '300px';
+            stage.style.position = 'absolute';
+            stage.style.left = '50%';
+            stage.style.top = '50%';
+            stage.style.transform = 'translate(-50%, -50%) rotateX(-45deg) rotateY(45deg)';
+            stage.style.transformStyle = 'preserve-3d';
+            stage.style.transition = 'transform 0.5s ease';
+            container.appendChild(stage);
+            
+            // 添加交互：鼠标拖拽旋转
+            let isDragging = false;
+            let startX, startY;
+            let currentX = -30;
+            let currentY = 45;
+            
+            container.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+            
+            container.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    const deltaX = e.clientX - startX;
+                    const deltaY = e.clientY - startY;
+                    currentY += deltaX * 0.5;
+                    currentX -= deltaY * 0.5;
+                    stage.style.transform = `translate(-50%, -50%) rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                }
+            });
+            
+            container.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+            
+            // 添加坐标轴
+            drawAxes3D(stage);
+            
+            // 添加网格平面
+            drawGridPlanes3D(stage);
+            
+            // 添加三个方程平面（初始状态）
+            const { a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3 } = window.equation3D;
+            drawPlane3D_CSS(stage, a1, b1, c1, d1, 'rgba(255, 0, 0, 0.6)');
+            drawPlane3D_CSS(stage, a2, b2, c2, d2, 'rgba(0, 255, 0, 0.6)');
+            drawPlane3D_CSS(stage, a3, b3, c3, d3, 'rgba(0, 0, 255, 0.6)');
+            
+            // 保存舞台引用
+            window.stage3D = stage;
+            
+            // 重置视图按钮
+            const resetViewBtn = document.createElement('button');
+            resetViewBtn.textContent = '重置视图';
+            resetViewBtn.style.position = 'absolute';
+            resetViewBtn.style.top = '10px';
+            resetViewBtn.style.left = '10px';
+            visualization.style.position = 'relative';
+            visualization.appendChild(resetViewBtn);
+            
+            resetViewBtn.addEventListener('click', function() {
+                currentX = -30;
+                currentY = 45;
+                stage.style.transform = `translate(-50%, -50%) rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            });
+        }
+        
+        // 绘制3D坐标轴（CSS实现）
+        function drawAxes3D(stage) {
+            const axisLength = 150;
+            
+            // X轴（红色）
+            const xAxis = document.createElement('div');
+            xAxis.style.position = 'absolute';
+            xAxis.style.width = `${axisLength}px`;
+            xAxis.style.height = '2px';
+            xAxis.style.backgroundColor = 'red';
+            xAxis.style.transformOrigin = '0 0';
+            xAxis.style.left = '100px';
+            xAxis.style.top = '100px';
+            stage.appendChild(xAxis);
+            
+            // Y轴（绿色）
+            const yAxis = document.createElement('div');
+            yAxis.style.position = 'absolute';
+            yAxis.style.width = '2px';
+            yAxis.style.height = `${axisLength}px`;
+            yAxis.style.backgroundColor = 'green';
+            yAxis.style.transformOrigin = '0 0';
+            yAxis.style.left = '100px';
+            yAxis.style.top = '100px';
+            stage.appendChild(yAxis);
+            
+            // Z轴（蓝色）
+            const zAxis = document.createElement('div');
+            zAxis.style.position = 'absolute';
+            zAxis.style.width = `${axisLength}px`;
+            zAxis.style.height = '2px';
+            zAxis.style.backgroundColor = 'blue';
+            zAxis.style.transformOrigin = '0 0';
+            zAxis.style.left = '100px';
+            zAxis.style.top = '100px';
+            zAxis.style.transform = 'rotateY(90deg)';
+            stage.appendChild(zAxis);
+            
+            // 坐标轴标签
+            const labels = ['X', 'Y', 'Z'];
+            const colors = ['red', 'green', 'blue'];
+            const positions = [
+                { x: axisLength + 100, y: 100, z: 0, rotation: 'rotateX(0deg) rotateY(0deg)' },
+                { x: 100, y: -10, z: 0, rotation: 'rotateX(0deg) rotateY(0deg)' },
+                { x: 100, y: 100, z: axisLength, rotation: 'rotateX(90deg) rotateY(0deg)' }
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const label = document.createElement('div');
+                label.textContent = labels[i];
+                label.style.position = 'absolute';
+                label.style.color = colors[i];
+                label.style.fontWeight = 'bold';
+                label.style.fontSize = '14px';
+                label.style.left = `${positions[i].x}px`;
+                label.style.top = `${positions[i].y}px`;
+                label.style.transform = positions[i].rotation;
+                stage.appendChild(label);
+            }
+        }
+        
+        // 绘制3D网格平面（CSS实现）
+        function drawGridPlanes3D(stage) {
+            const size = 200;
+            const step = 20;
+            
+            // XY平面（红色网格）
+            const xyPlane = document.createElement('div');
+            xyPlane.style.position = 'absolute';
+            xyPlane.style.width = `${size}px`;
+            xyPlane.style.height = `${size}px`;
+            xyPlane.style.left = `${100 - size/2}px`;
+            xyPlane.style.top = `${100 - size/2}px`;
+            xyPlane.style.border = '1px solid rgba(255, 0, 0, 0.3)';
+            xyPlane.style.transform = 'translateZ(0)';
+            stage.appendChild(xyPlane);
+            
+            // XZ平面（绿色网格）
+            const xzPlane = document.createElement('div');
+            xzPlane.style.position = 'absolute';
+            xzPlane.style.width = `${size}px`;
+            xzPlane.style.height = `${size}px`;
+            xzPlane.style.left = `${100 - size/2}px`;
+            xzPlane.style.top = `${100 - size/2}px`;
+            xzPlane.style.border = '1px solid rgba(0, 255, 0, 0.3)';
+            xzPlane.style.transform = 'rotateX(90deg)';
+            xzPlane.style.transformOrigin = 'center center';
+            stage.appendChild(xzPlane);
+            
+            // YZ平面（蓝色网格）
+            const yzPlane = document.createElement('div');
+            yzPlane.style.position = 'absolute';
+            yzPlane.style.width = `${size}px`;
+            yzPlane.style.height = `${size}px`;
+            yzPlane.style.left = `${100 - size/2}px`;
+            yzPlane.style.top = `${100 - size/2}px`;
+            yzPlane.style.border = '1px solid rgba(0, 0, 255, 0.3)';
+            yzPlane.style.transform = 'rotateY(90deg)';
+            yzPlane.style.transformOrigin = 'center center';
+            stage.appendChild(yzPlane);
+        }
+        
+        // 绘制3D平面（CSS实现，基于真实平面方程）
+        function drawPlane3D_CSS(stage, a, b, c, d, color) {
+            // 创建平面元素
+            const plane = document.createElement('div');
+            plane.className = 'equation-plane';
+            plane.style.position = 'absolute';
+            plane.style.width = '250px';
+            plane.style.height = '250px';
+            plane.style.left = '25px';
+            plane.style.top = '25px';
+            plane.style.backgroundColor = color;
+            plane.style.border = '2px solid rgba(0, 0, 0, 0.5)';
+            plane.style.opacity = '0.5';
+            plane.style.transformStyle = 'preserve-3d';
+            plane.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.3)';
+            
+            // 计算平面的法向量和旋转角度
+            // 平面方程：ax + by + cz = d
+            
+            // 计算法向量
+            const normal = { x: a, y: b, z: c };
+            
+            // 计算法向量的长度
+            const length = Math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+            
+            // 归一化法向量
+            let nx = 0, ny = 0, nz = 1;
+            if (length > 1e-10) {
+                nx = normal.x / length;
+                ny = normal.y / length;
+                nz = normal.z / length;
+            }
+            
+            // 计算从默认法向量(0,0,1)到平面法向量的旋转角度
+            let rotationX = 0;
+            let rotationY = 0;
+            
+            if (Math.abs(nz) < 0.9999) {
+                // 计算旋转角度
+                rotationY = Math.atan2(nx, nz) * 180 / Math.PI;
+                rotationX = Math.asin(ny) * 180 / Math.PI;
+            }
+            
+            // 计算平面到原点的距离（简化处理）
+            const distance = d / (length || 1);
+            
+            // 设置平面的变换
+            // 注意：CSS 3D变换的顺序是从右到左应用的
+            plane.style.transform = `translateZ(${distance * 10}px) rotateX(${-rotationX}deg) rotateY(${rotationY}deg)`;
+            
+            stage.appendChild(plane);
+        }
+        
+        // 计算并可视化
+        function calculateAndVisualize() {
+            if (equationType === 2) {
+                calculate2D();
+                draw2D();
+            } else {
+                calculate3D();
+                draw3D();
+            }
+        }
+        
+        // 计算二元方程组
+        function calculate2D() {
+            // 获取输入值
+            const a1 = parseFloat(document.getElementById('a1').value) || 0;
+            const b1 = parseFloat(document.getElementById('b1').value) || 0;
+            const c1 = parseFloat(document.getElementById('c1').value) || 0;
+            const a2 = parseFloat(document.getElementById('a2').value) || 0;
+            const b2 = parseFloat(document.getElementById('b2').value) || 0;
+            const c2 = parseFloat(document.getElementById('c2').value) || 0;
+            
+            // 系数矩阵 A
+            const A = [[a1, b1], [a2, b2]];
+            // 增广矩阵 Ā
+            const AugA = [[a1, b1, c1], [a2, b2, c2]];
+            
+            // 计算秩
+            const rankA = calculateRank2D(A);
+            const rankAugA = calculateRank2D(AugA);
+            
+            // 判断解的类型
+            let solutionType = "";
+            let solution = null;
+            
+            if (rankA === 2 && rankAugA === 2) {
+                // 唯一解
+                solutionType = "唯一解";
+                // 使用克拉默法则计算解
+                const detA = a1 * b2 - a2 * b1;
+                const detAx = c1 * b2 - c2 * b1;
+                const detAy = a1 * c2 - a2 * c1;
+                solution = { x: detAx / detA, y: detAy / detA };
+            } else if (rankA === rankAugA && rankA < 2) {
+                // 无穷解
+                solutionType = "无穷解";
+            } else {
+                // 无解
+                solutionType = "无解";
+            }
+            
+            // 更新结果显示
+            updateResultDisplay(rankA, rankAugA, solutionType, solution, 2);
+            
+            // 保存结果
+            window.solution = solution;
+            window.solutionType = solutionType;
+            window.equation2D = { a1, b1, c1, a2, b2, c2 };
+        }
+        
+        // 计算三元方程组
+        function calculate3D() {
+            // 获取输入值
+            const a1 = parseFloat(document.getElementById('a1_3').value) || 0;
+            const b1 = parseFloat(document.getElementById('b1_3').value) || 0;
+            const c1 = parseFloat(document.getElementById('c1_3').value) || 0;
+            const d1 = parseFloat(document.getElementById('d1_3').value) || 0;
+            const a2 = parseFloat(document.getElementById('a2_3').value) || 0;
+            const b2 = parseFloat(document.getElementById('b2_3').value) || 0;
+            const c2 = parseFloat(document.getElementById('c2_3').value) || 0;
+            const d2 = parseFloat(document.getElementById('d2_3').value) || 0;
+            const a3 = parseFloat(document.getElementById('a3_3').value) || 0;
+            const b3 = parseFloat(document.getElementById('b3_3').value) || 0;
+            const c3 = parseFloat(document.getElementById('c3_3').value) || 0;
+            const d3 = parseFloat(document.getElementById('d3_3').value) || 0;
+            
+            // 系数矩阵 A
+            const A = [[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]];
+            // 增广矩阵 Ā
+            const AugA = [[a1, b1, c1, d1], [a2, b2, c2, d2], [a3, b3, c3, d3]];
+            
+            // 计算秩
+            const rankA = calculateRank3D(A);
+            const rankAugA = calculateRank3D(AugA);
+            
+            // 判断解的类型
+            let solutionType = "";
+            let solution = null;
+            
+            if (rankA === 3 && rankAugA === 3) {
+                // 唯一解
+                solutionType = "唯一解";
+                // 使用高斯消元法计算解
+                solution = gaussianElimination3D([[a1, b1, c1, d1], [a2, b2, c2, d2], [a3, b3, c3, d3]]);
+            } else if (rankA === rankAugA && rankA < 3) {
+                // 无穷解
+                solutionType = "无穷解";
+            } else {
+                // 无解
+                solutionType = "无解";
+            }
+            
+            // 更新结果显示
+            updateResultDisplay(rankA, rankAugA, solutionType, solution, 3);
+            
+            // 保存结果
+            window.solution = solution;
+            window.solutionType = solutionType;
+            window.equation3D = { a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3 };
+            
+            console.log('Calculated 3D equation:', window.equation3D);
+            console.log('Solution:', solution);
+            console.log('Solution type:', solutionType);
+        }
+        
+        // 计算二阶矩阵的秩
+        function calculateRank2D(matrix) {
+            // 对于二阶矩阵，判断是否线性相关
+            const [row1, row2] = matrix;
+            
+            // 检查第一行是否全为0
+            const row1Zero = row1.every(val => val === 0);
+            const row2Zero = row2.every(val => val === 0);
+            
+            if (row1Zero && row2Zero) return 0;
+            if (row1Zero || row2Zero) return 1;
+            
+            // 检查两行是否成比例
+            const ratio = row1[0] !== 0 ? row2[0] / row1[0] : row2[1] / row1[1];
+            const proportional = row1.every((val, i) => Math.abs(row2[i] - val * ratio) < 1e-10);
+            
+            return proportional ? 1 : 2;
+        }
+        
+        // 计算三阶矩阵的秩
+        function calculateRank3D(matrix) {
+            // 复制矩阵以避免修改原矩阵
+            const mat = matrix.map(row => [...row]);
+            const rows = mat.length;
+            const cols = mat[0].length;
+            let rank = 0;
+            
+            for (let col = 0; col < cols && rank < rows; col++) {
+                // 找到主元行
+                let pivotRow = rank;
+                for (let row = rank; row < rows; row++) {
+                    if (Math.abs(mat[row][col]) > Math.abs(mat[pivotRow][col])) {
+                        pivotRow = row;
+                    }
+                }
+                
+                // 如果主元为0，跳过该列
+                if (Math.abs(mat[pivotRow][col]) < 1e-10) continue;
+                
+                // 交换主元行和当前行
+                [mat[rank], mat[pivotRow]] = [mat[pivotRow], mat[rank]];
+                
+                // 消去下方元素
+                for (let row = rank + 1; row < rows; row++) {
+                    const factor = mat[row][col] / mat[rank][col];
+                    for (let c = col; c < cols; c++) {
+                        mat[row][c] -= factor * mat[rank][c];
+                    }
+                }
+                
+                rank++;
+            }
+            
+            return rank;
+        }
+        
+        // 高斯消元法求解三元方程组
+        function gaussianElimination3D(matrix) {
+            // 复制矩阵以避免修改原矩阵
+            const mat = matrix.map(row => [...row]);
+            
+            // 前向消元
+            for (let i = 0; i < 3; i++) {
+                // 找到主元
+                let maxRow = i;
+                for (let k = i + 1; k < 3; k++) {
+                    if (Math.abs(mat[k][i]) > Math.abs(mat[maxRow][i])) {
+                        maxRow = k;
+                    }
+                }
+                
+                // 交换行
+                [mat[i], mat[maxRow]] = [mat[maxRow], mat[i]];
+                
+                // 消元
+                for (let k = i + 1; k < 3; k++) {
+                    const factor = mat[k][i] / mat[i][i];
+                    for (let j = i; j < 4; j++) {
+                        mat[k][j] -= factor * mat[i][j];
+                    }
+                }
+            }
+            
+            // 回代求解
+            const x = new Array(3);
+            for (let i = 2; i >= 0; i--) {
+                x[i] = mat[i][3];
+                for (let j = i + 1; j < 3; j++) {
+                    x[i] -= mat[i][j] * x[j];
+                }
+                x[i] /= mat[i][i];
+            }
+            
+            return { x: x[0], y: x[1], z: x[2] };
+        }
+        
+        // 更新结果显示
+        function updateResultDisplay(rankA, rankAugA, solutionType, solution, n) {
+            // 更新秩显示
+            document.getElementById('rankA').textContent = rankA;
+            document.getElementById('rankAugA').textContent = rankAugA;
+            
+            // 更新解的类型
+            document.getElementById('solutionType').textContent = solutionType;
+            
+            // 更新解的坐标
+            const solutionCoords = document.getElementById('solutionCoords');
+            const solutionSpan = document.getElementById('solution');
+            
+            if (solutionType === "唯一解" && solution) {
+                solutionCoords.style.display = 'block';
+                if (n === 2) {
+                    solutionSpan.textContent = `(x, y) = (${solution.x.toFixed(2)}, ${solution.y.toFixed(2)})`;
+                } else {
+                    solutionSpan.textContent = `(x, y, z) = (${solution.x.toFixed(2)}, ${solution.y.toFixed(2)}, ${solution.z.toFixed(2)})`;
+                }
+            } else {
+                solutionCoords.style.display = 'none';
+            }
+            
+            // 更新代数依据
+            let algebraicReason = "";
+            if (solutionType === "唯一解") {
+                algebraicReason = `因r(A)=r(Ā)=${n}=n，故方程组有唯一解`;
+            } else if (solutionType === "无穷解") {
+                algebraicReason = `因r(A)=r(Ā)=${rankA}<${n}，故方程组有无穷多解`;
+            } else {
+                algebraicReason = `因r(A)=${rankA}≠r(Ā)=${rankAugA}，故方程组无解`;
+            }
+            document.getElementById('algebraicReason').textContent = algebraicReason;
+            
+            // 更新几何意义
+            let geometricMeaning = "";
+            if (n === 2) {
+                if (solutionType === "唯一解") {
+                    geometricMeaning = "两条直线相交于一点，该点坐标即为方程组的解";
+                } else if (solutionType === "无穷解") {
+                    geometricMeaning = "两条直线完全重合，有无穷多个交点";
+                } else {
+                    geometricMeaning = "两条直线平行，没有公共交点";
+                }
+            } else {
+                if (solutionType === "唯一解") {
+                    geometricMeaning = "三个平面相交于一点，该点坐标即为方程组的解";
+                } else if (solutionType === "无穷解") {
+                    geometricMeaning = "三个平面相交于一条直线或完全重合，有无穷多个交点";
+                } else {
+                    geometricMeaning = "三个平面没有公共交点";
+                }
+            }
+            document.getElementById('geometricMeaning').textContent = geometricMeaning;
+        }
+        
+        // 绘制二元方程组
+        function draw2D() {
+            const offset = canvas.offset;
+            const scale = canvas.scale;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制坐标轴
+            drawAxes2D(offset, scale);
+            
+            // 获取方程参数
+            const { a1, b1, c1, a2, b2, c2 } = window.equation2D;
+            
+            // 绘制两条直线
+            drawLine2D(a1, b1, c1, '#ff0000', offset, scale);
+            drawLine2D(a2, b2, c2, '#0000ff', offset, scale);
+            
+            // 绘制解
+            if (window.solutionType === "唯一解" && window.solution) {
+                const { x, y } = window.solution;
+                const screenX = offset.x + x * scale;
+                const screenY = offset.y - y * scale;
+                
+                // 绘制交点
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, 6, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // 绘制坐标标签
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, screenX, screenY - 10);
+            } else if (window.solutionType === "无穷解") {
+                // 绘制提示文本
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('直线重合，无穷多解', canvas.width / 2, canvas.height / 2);
+            } else if (window.solutionType === "无解") {
+                // 绘制提示文本
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('直线平行，无公共解', canvas.width / 2, canvas.height / 2);
+            }
+        }
+        
+        // 绘制2D坐标轴
+        function drawAxes2D(offset, scale) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            // 绘制X轴
+            ctx.beginPath();
+            ctx.moveTo(0, offset.y);
+            ctx.lineTo(canvas.width, offset.y);
+            ctx.stroke();
+            
+            // 绘制Y轴
+            ctx.beginPath();
+            ctx.moveTo(offset.x, 0);
+            ctx.lineTo(offset.x, canvas.height);
+            ctx.stroke();
+            
+            // 绘制网格线
+            ctx.strokeStyle = '#eee';
+            ctx.lineWidth = 1;
+            
+            // 垂直网格线
+            for (let x = offset.x % scale; x < canvas.width; x += scale) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // 水平网格线
+            for (let y = offset.y % scale; y < canvas.height; y += scale) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // 绘制刻度标签
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            
+            // X轴刻度
+            for (let x = offset.x + scale; x < canvas.width; x += scale) {
+                const value = ((x - offset.x) / scale).toFixed(0);
+                ctx.fillText(value, x, offset.y + 15);
+            }
+            for (let x = offset.x - scale; x > 0; x -= scale) {
+                const value = ((x - offset.x) / scale).toFixed(0);
+                ctx.fillText(value, x, offset.y + 15);
+            }
+            
+            // Y轴刻度
+            ctx.textAlign = 'right';
+            for (let y = offset.y - scale; y > 0; y -= scale) {
+                const value = ((offset.y - y) / scale).toFixed(0);
+                ctx.fillText(value, offset.x - 5, y + 5);
+            }
+            for (let y = offset.y + scale; y < canvas.height; y += scale) {
+                const value = ((offset.y - y) / scale).toFixed(0);
+                ctx.fillText(value, offset.x - 5, y + 5);
+            }
+            
+            // 绘制坐标轴标签
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText('x', canvas.width - 10, offset.y + 20);
+            ctx.save();
+            ctx.translate(15, 10);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('y', 0, 0);
+            ctx.restore();
+        }
+        
+        // 绘制2D直线
+        function drawLine2D(a, b, c, color, offset, scale) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            
+            let x1, y1, x2, y2;
+            
+            // 如果b不为0，计算x在画布范围内的y值
+            if (Math.abs(b) > 1e-10) {
+                // 计算直线与左右边界的交点
+                x1 = -canvas.width / scale;
+                y1 = (c - a * x1) / b;
+                x2 = canvas.width / scale;
+                y2 = (c - a * x2) / b;
+            } else {
+                // 垂直直线
+                if (Math.abs(a) > 1e-10) {
+                    x1 = x2 = c / a;
+                    y1 = canvas.height / scale;
+                    y2 = -canvas.height / scale;
+                } else {
+                    // 无效直线（a和b都为0）
+                    return;
+                }
+            }
+            
+            // 转换为屏幕坐标
+            const screenX1 = offset.x + x1 * scale;
+            const screenY1 = offset.y - y1 * scale;
+            const screenX2 = offset.x + x2 * scale;
+            const screenY2 = offset.y - y2 * scale;
+            
+            // 绘制直线
+            ctx.beginPath();
+            ctx.moveTo(screenX1, screenY1);
+            ctx.lineTo(screenX2, screenY2);
+            ctx.stroke();
+        }
+        
+        // 绘制三元方程组
+        function draw3D() {
+            const stage = window.stage3D;
+            if (!stage) return;
+            
+            // 移除之前的平面和标记
+            const oldPlanes = stage.querySelectorAll('.equation-plane');
+            oldPlanes.forEach(plane => plane.remove());
+            
+            const oldMarkers = stage.querySelectorAll('.solution-marker');
+            oldMarkers.forEach(marker => marker.remove());
+            
+            // 获取方程参数
+            const { a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3 } = window.equation3D;
+            
+            // 绘制三个真实平面
+            drawPlane3D_CSS(stage, a1, b1, c1, d1, 'rgba(255, 0, 0, 0.6)');
+            drawPlane3D_CSS(stage, a2, b2, c2, d2, 'rgba(0, 255, 0, 0.6)');
+            drawPlane3D_CSS(stage, a3, b3, c3, d3, 'rgba(0, 0, 255, 0.6)');
+            
+            // 添加解标记（如果有唯一解）
+            if (window.solutionType === "唯一解" && window.solution) {
+                const { x, y, z } = window.solution;
+                
+                // 创建3D立体解标记容器
+                const markerContainer = document.createElement('div');
+                markerContainer.className = 'solution-marker';
+                markerContainer.style.position = 'absolute';
+                markerContainer.style.width = '25px';
+                markerContainer.style.height = '25px';
+                markerContainer.style.left = '150px';
+                markerContainer.style.top = '150px';
+                markerContainer.style.transform = `translateZ(${z * 10}px) translateX(${x * 10}px) translateY(${-y * 10}px)`;
+                markerContainer.style.transformStyle = 'preserve-3d';
+                markerContainer.style.zIndex = '100';
+                
+                // 创建3D球体效果
+                const sphere = document.createElement('div');
+                sphere.style.width = '100%';
+                sphere.style.height = '100%';
+                sphere.style.borderRadius = '50%';
+                sphere.style.backgroundColor = 'yellow';
+                sphere.style.boxShadow = 
+                    '0 0 20px rgba(255, 255, 0, 1), ' +
+                    '0 8px 8px rgba(0, 0, 0, 0.3) inset, ' +
+                    '0 -8px 8px rgba(255, 255, 255, 0.5) inset';
+                sphere.style.border = '2px solid white';
+                sphere.style.transformStyle = 'preserve-3d';
+                
+                // 添加球体高光
+                const highlight = document.createElement('div');
+                highlight.style.position = 'absolute';
+                highlight.style.width = '45%';
+                highlight.style.height = '45%';
+                highlight.style.left = '25%';
+                highlight.style.top = '20%';
+                highlight.style.borderRadius = '50%';
+                highlight.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                highlight.style.filter = 'blur(1.5px)';
+                
+                // 添加球体暗部
+                const shadow = document.createElement('div');
+                shadow.style.position = 'absolute';
+                shadow.style.width = '55%';
+                shadow.style.height = '55%';
+                shadow.style.right = '15%';
+                shadow.style.bottom = '15%';
+                shadow.style.borderRadius = '50%';
+                shadow.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+                shadow.style.filter = 'blur(2px)';
+                
+                // 创建3D效果的坐标轴线
+                const axisX = document.createElement('div');
+                axisX.style.position = 'absolute';
+                axisX.style.width = '50px';
+                axisX.style.height = '1.5px';
+                axisX.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
+                axisX.style.left = '-12.5px';
+                axisX.style.top = '50%';
+                axisX.style.transform = 'translateY(-50%)';
+                
+                const axisY = document.createElement('div');
+                axisY.style.position = 'absolute';
+                axisY.style.width = '1.5px';
+                axisY.style.height = '50px';
+                axisY.style.backgroundColor = 'rgba(0, 255, 0, 0.7)';
+                axisY.style.left = '50%';
+                axisY.style.top = '-12.5px';
+                axisY.style.transform = 'translateX(-50%)';
+                
+                const axisZ = document.createElement('div');
+                axisZ.style.position = 'absolute';
+                axisZ.style.width = '50px';
+                axisZ.style.height = '1.5px';
+                axisZ.style.backgroundColor = 'rgba(0, 0, 255, 0.7)';
+                axisZ.style.left = '-12.5px';
+                axisZ.style.top = '50%';
+                axisZ.style.transform = 'translateY(-50%) rotateY(90deg)';
+                
+                // 添加坐标标签
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                label.style.color = 'white';
+                label.style.padding = '5px 10px';
+                label.style.borderRadius = '5px';
+                label.style.fontSize = '12px';
+                label.style.fontWeight = 'bold';
+                label.style.left = '50%';
+                label.style.top = '120%';
+                label.style.transform = 'translateX(-50%)';
+                label.style.whiteSpace = 'nowrap';
+                label.textContent = `(${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`;
+                label.style.zIndex = '101';
+                
+                // 组装3D标记
+                sphere.appendChild(highlight);
+                sphere.appendChild(shadow);
+                markerContainer.appendChild(sphere);
+                markerContainer.appendChild(axisX);
+                markerContainer.appendChild(axisY);
+                markerContainer.appendChild(axisZ);
+                markerContainer.appendChild(label);
+                
+                stage.appendChild(markerContainer);
+            }
+        }
+        
+        // 生成随机方程组
+        function generateRandomEquation() {
+            if (equationType === 2) {
+                generateRandom2DEquation();
+            } else {
+                generateRandom3DEquation();
+            }
+        }
+        
+        // 生成随机二元方程组
+        function generateRandom2DEquation() {
+            // 随机选择解的类型（0:唯一解, 1:无穷解, 2:无解）
+            const type = Math.floor(Math.random() * 3);
+            
+            let a1, b1, c1, a2, b2, c2;
+            
+            switch(type) {
+                case 0: // 唯一解
+                    a1 = Math.floor(Math.random() * 10) - 5;
+                    b1 = Math.floor(Math.random() * 10) - 5;
+                    a2 = Math.floor(Math.random() * 10) - 5;
+                    b2 = Math.floor(Math.random() * 10) - 5;
+                    // 确保行列式不为0
+                    while (a1 * b2 - a2 * b1 === 0) {
+                        a1 = Math.floor(Math.random() * 10) - 5;
+                        b1 = Math.floor(Math.random() * 10) - 5;
+                        a2 = Math.floor(Math.random() * 10) - 5;
+                        b2 = Math.floor(Math.random() * 10) - 5;
+                    }
+                    // 生成随机解
+                    const x = Math.floor(Math.random() * 10) - 5;
+                    const y = Math.floor(Math.random() * 10) - 5;
+                    c1 = a1 * x + b1 * y;
+                    c2 = a2 * x + b2 * y;
+                    break;
+                case 1: // 无穷解
+                    a1 = Math.floor(Math.random() * 10) - 5;
+                    b1 = Math.floor(Math.random() * 10) - 5;
+                    c1 = Math.floor(Math.random() * 10) - 5;
+                    // 生成比例系数
+                    const k = Math.floor(Math.random() * 5) + 1;
+                    a2 = a1 * k;
+                    b2 = b1 * k;
+                    c2 = c1 * k;
+                    break;
+                case 2: // 无解
+                    a1 = Math.floor(Math.random() * 10) - 5;
+                    b1 = Math.floor(Math.random() * 10) - 5;
+                    c1 = Math.floor(Math.random() * 10) - 5;
+                    // 生成比例系数
+                    const k2 = Math.floor(Math.random() * 5) + 1;
+                    a2 = a1 * k2;
+                    b2 = b1 * k2;
+                    // 常数项不成比例
+                    c2 = c1 * k2 + (Math.floor(Math.random() * 5) + 1);
+                    break;
+            }
+            
+            // 设置输入值
+            document.getElementById('a1').value = a1;
+            document.getElementById('b1').value = b1;
+            document.getElementById('c1').value = c1;
+            document.getElementById('a2').value = a2;
+            document.getElementById('b2').value = b2;
+            document.getElementById('c2').value = c2;
+        }
+        
+        // 生成随机三元方程组
+        function generateRandom3DEquation() {
+            // 随机选择解的类型（0:唯一解, 1:无穷解, 2:无解）
+            const type = Math.floor(Math.random() * 3);
+            
+            let a1, b1, c1, d1, a2, b2, c2, d2, a3, b3, c3, d3;
+            
+            switch(type) {
+                case 0: // 唯一解
+                    // 生成随机系数矩阵，确保行列式不为0
+                    do {
+                        a1 = Math.floor(Math.random() * 5) - 2;
+                        b1 = Math.floor(Math.random() * 5) - 2;
+                        c1 = Math.floor(Math.random() * 5) - 2;
+                        a2 = Math.floor(Math.random() * 5) - 2;
+                        b2 = Math.floor(Math.random() * 5) - 2;
+                        c2 = Math.floor(Math.random() * 5) - 2;
+                        a3 = Math.floor(Math.random() * 5) - 2;
+                        b3 = Math.floor(Math.random() * 5) - 2;
+                        c3 = Math.floor(Math.random() * 5) - 2;
+                    } while (calculateRank3D([[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]]) < 3);
+                    
+                    // 生成随机解
+                    const x = Math.floor(Math.random() * 5) - 2;
+                    const y = Math.floor(Math.random() * 5) - 2;
+                    const z = Math.floor(Math.random() * 5) - 2;
+                    
+                    d1 = a1 * x + b1 * y + c1 * z;
+                    d2 = a2 * x + b2 * y + c2 * z;
+                    d3 = a3 * x + b3 * y + c3 * z;
+                    break;
+                case 1: // 无穷解
+                    // 生成两个线性无关的方程
+                    a1 = Math.floor(Math.random() * 5) - 2;
+                    b1 = Math.floor(Math.random() * 5) - 2;
+                    c1 = Math.floor(Math.random() * 5) - 2;
+                    d1 = Math.floor(Math.random() * 5) - 2;
+                    
+                    a2 = Math.floor(Math.random() * 5) - 2;
+                    b2 = Math.floor(Math.random() * 5) - 2;
+                    c2 = Math.floor(Math.random() * 5) - 2;
+                    d2 = Math.floor(Math.random() * 5) - 2;
+                    
+                    // 第三个方程是前两个的线性组合
+                    const k1 = Math.floor(Math.random() * 3) - 1;
+                    const k2 = Math.floor(Math.random() * 3) - 1;
+                    a3 = a1 * k1 + a2 * k2;
+                    b3 = b1 * k1 + b2 * k2;
+                    c3 = c1 * k1 + c2 * k2;
+                    d3 = d1 * k1 + d2 * k2;
+                    break;
+                case 2: // 无解
+                    // 生成两个线性无关的方程
+                    a1 = Math.floor(Math.random() * 5) - 2;
+                    b1 = Math.floor(Math.random() * 5) - 2;
+                    c1 = Math.floor(Math.random() * 5) - 2;
+                    d1 = Math.floor(Math.random() * 5) - 2;
+                    
+                    a2 = Math.floor(Math.random() * 5) - 2;
+                    b2 = Math.floor(Math.random() * 5) - 2;
+                    c2 = Math.floor(Math.random() * 5) - 2;
+                    d2 = Math.floor(Math.random() * 5) - 2;
+                    
+                    // 第三个方程系数是前两个的线性组合，但常数项不是
+                    const k3 = Math.floor(Math.random() * 3) - 1;
+                    const k4 = Math.floor(Math.random() * 3) - 1;
+                    a3 = a1 * k3 + a2 * k4;
+                    b3 = b1 * k3 + b2 * k4;
+                    c3 = c1 * k3 + c2 * k4;
+                    d3 = d1 * k3 + d2 * k4 + (Math.floor(Math.random() * 3) + 1);
+                    break;
+            }
+            
+            // 设置输入值
+            document.getElementById('a1_3').value = a1;
+            document.getElementById('b1_3').value = b1;
+            document.getElementById('c1_3').value = c1;
+            document.getElementById('d1_3').value = d1;
+            document.getElementById('a2_3').value = a2;
+            document.getElementById('b2_3').value = b2;
+            document.getElementById('c2_3').value = c2;
+            document.getElementById('d2_3').value = d2;
+            document.getElementById('a3_3').value = a3;
+            document.getElementById('b3_3').value = b3;
+            document.getElementById('c3_3').value = c3;
+            document.getElementById('d3_3').value = d3;
+        }
+        
+        // 重置输入
+        function resetInput() {
+            if (equationType === 2) {
+                // 二元方程组默认值
+                document.getElementById('a1').value = 1;
+                document.getElementById('b1').value = 2;
+                document.getElementById('c1').value = 3;
+                document.getElementById('a2').value = 3;
+                document.getElementById('b2').value = -1;
+                document.getElementById('c2').value = 1;
+            } else {
+                // 三元方程组默认值
+                document.getElementById('a1_3').value = 1;
+                document.getElementById('b1_3').value = 1;
+                document.getElementById('c1_3').value = 1;
+                document.getElementById('d1_3').value = 6;
+                document.getElementById('a2_3').value = 2;
+                document.getElementById('b2_3').value = -1;
+                document.getElementById('c2_3').value = 1;
+                document.getElementById('d2_3').value = 3;
+                document.getElementById('a3_3').value = 1;
+                document.getElementById('b3_3').value = 2;
+                document.getElementById('c3_3').value = -1;
+                document.getElementById('d3_3').value = 2;
+            }
+        }
+    </script>
+</body>
+</html>
